@@ -156,7 +156,6 @@ public:
     pthread_mutex_init(&d_holelock,0);
 
     d_tickinterval=60;
-    d_masterupdateinterval=1;
     d_masterschanged=d_slaveschanged=true;
     d_nsock4 = -1;
     d_nsock6 = -1;
@@ -208,7 +207,6 @@ private:
   Semaphore d_suck_sem;
   Semaphore d_any_sem;
   time_t d_tickinterval;
-  time_t d_masterupdateinterval;
   set<DomainInfo> d_tocheck;
   vector<DNSPacket> d_potentialsupermasters;
   set<string> d_alsoNotify;

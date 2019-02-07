@@ -108,18 +108,14 @@ void CommunicatorClass::mainloop(void)
     L<<Logger::Error<<"Master/slave communicator launching"<<endl;
     PacketHandler P;
     d_tickinterval=::arg().asNum("slave-cycle-interval");
-    d_masterupdateinterval=::arg().asNum("master-update-interval");
     makeNotifySockets();
 
-    int rc, masterupdateticks=0;
+    int rc;
     time_t next, tick;
 
     for(;;) {
       slaveRefresh(&P);
-      if(++masterupdateticks >= d_masterupdateinterval) {
-        masterUpdateCheck(&P);
-        masterupdateticks = 0;
-      }
+      masterUpdateCheck(&P);
       tick=doNotifications(); // this processes any notification acknowledgements and actually send out our own notifications
       
       tick = min (tick, d_tickinterval); 
