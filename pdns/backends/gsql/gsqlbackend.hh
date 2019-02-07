@@ -79,6 +79,7 @@ public:
       d_UpdateSerialOfZoneQuery_stmt = d_db->prepare(d_UpdateSerialOfZoneQuery, 2);
       d_UpdateLastCheckofZoneQuery_stmt = d_db->prepare(d_UpdateLastCheckofZoneQuery, 2);
       d_InfoOfAllMasterDomainsQuery_stmt = d_db->prepare(d_InfoOfAllMasterDomainsQuery, 0);
+      d_getAllMasterSOAQuery_stmt = d_db->prepare(d_getAllMasterSOAQuery, 0);
       d_DeleteDomainQuery_stmt = d_db->prepare(d_DeleteDomainQuery, 1);
       d_DeleteZoneQuery_stmt = d_db->prepare(d_DeleteZoneQuery, 1);
       d_DeleteRRSetQuery_stmt = d_db->prepare(d_DeleteRRSetQuery, 3);
@@ -141,6 +142,7 @@ public:
     d_UpdateSerialOfZoneQuery_stmt.reset();
     d_UpdateLastCheckofZoneQuery_stmt.reset();
     d_InfoOfAllMasterDomainsQuery_stmt.reset();
+    d_getAllMasterSOAQuery_stmt.reset();
     d_DeleteDomainQuery_stmt.reset();
     d_DeleteZoneQuery_stmt.reset();
     d_DeleteRRSetQuery_stmt.reset();
@@ -296,6 +298,7 @@ private:
   string d_UpdateSerialOfZoneQuery;
   string d_UpdateLastCheckofZoneQuery;
   string d_InfoOfAllMasterDomainsQuery;
+  string d_getAllMasterSOAQuery;
   string d_DeleteDomainQuery;
   string d_DeleteZoneQuery;
   string d_DeleteRRSetQuery;
@@ -366,6 +369,7 @@ private:
   unique_ptr<SSqlStatement> d_UpdateSerialOfZoneQuery_stmt;
   unique_ptr<SSqlStatement> d_UpdateLastCheckofZoneQuery_stmt;
   unique_ptr<SSqlStatement> d_InfoOfAllMasterDomainsQuery_stmt;
+  unique_ptr<SSqlStatement> d_getAllMasterSOAQuery_stmt;
   unique_ptr<SSqlStatement> d_DeleteDomainQuery_stmt;
   unique_ptr<SSqlStatement> d_DeleteZoneQuery_stmt;
   unique_ptr<SSqlStatement> d_DeleteRRSetQuery_stmt;

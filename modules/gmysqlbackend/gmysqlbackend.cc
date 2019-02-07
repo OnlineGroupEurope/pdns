@@ -124,6 +124,7 @@ public:
     declare(suffix,"update-lastcheck-query","", "update domains set last_check=? where id=?");
     declare(suffix,"zone-lastchange-query", "", "select max(change_date) from records where domain_id=?");
     declare(suffix,"info-all-master-query","", "select id,name,master,last_check,notified_serial,type from domains where type='MASTER'");
+    declare(suffix,"get-all-master-soa-query","","select d.id,d.name,d.last_check,d.notified_serial,r.content from domains d join records r on r.type='SOA' and d.id=r.domain_id where d.type='MASTER'");
     declare(suffix,"delete-domain-query","", "delete from domains where name=?");
     declare(suffix,"delete-zone-query","", "delete from records where domain_id=?");
     declare(suffix,"delete-rrset-query","","delete from records where domain_id=? and name=? and type=?");

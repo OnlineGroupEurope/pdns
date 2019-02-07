@@ -75,6 +75,7 @@ GSQLBackend::GSQLBackend(const string &mode, const string &suffix)
   d_UpdateAccountOfZoneQuery=getArg("update-account-query");
   d_ZoneLastChangeQuery=getArg("zone-lastchange-query");
   d_InfoOfAllMasterDomainsQuery=getArg("info-all-master-query");
+  d_getAllMasterSOAQuery=getArg("get-all-master-soa-query");
   d_DeleteDomainQuery=getArg("delete-domain-query");
   d_DeleteZoneQuery=getArg("delete-zone-query");
   d_DeleteRRSetQuery=getArg("delete-rrset-query");
@@ -144,6 +145,7 @@ GSQLBackend::GSQLBackend(const string &mode, const string &suffix)
   d_UpdateLastCheckofZoneQuery_stmt = NULL;
   d_UpdateAccountOfZoneQuery_stmt = NULL;
   d_InfoOfAllMasterDomainsQuery_stmt = NULL;
+  d_getAllMasterSOAQuery_stmt = NULL;
   d_DeleteDomainQuery_stmt = NULL;
   d_DeleteZoneQuery_stmt = NULL;
   d_DeleteRRSetQuery_stmt = NULL;
@@ -406,42 +408,39 @@ void GSQLBackend::getUpdatedMasters(vector<DomainInfo> *updatedDomains)
   try {
     reconnectIfNeeded();
 
-    d_InfoOfAllMasterDomainsQuery_stmt->
-      execute()->
-      getResult(d_result)->
-      reset();
+    d_getAllMasterSOAQuery_stmt->
+        execute()->
+        getResult(d_result)->
+        reset();
   }
   catch(SSqlException &e) {
-    throw PDNSException("GSQLBackend unable to retrieve list of master domains: "+e.txtReason());
+    throw PDNSException("GSQLBackend unable to retrieve list of SOA Records: "+e.txtReason());
   }
 
-  vector<DomainInfo> allMasters;
   size_t numanswers=d_result.size();
-  for(size_t n=0;n<numanswers;++n) { // id,name,master,last_check,notified_serial
+  for(size_t n=0;n<numanswers;++n) { // id,name,last_check,notified_serial,content
+    ASSERT_ROW_COLUMNS("info-all-soa-master-query", d_result[n], 5);
+    SOAData sdata;
+    sdata.serial=0;
+    sdata.refresh=0;
     DomainInfo sd;
-    ASSERT_ROW_COLUMNS("info-all-master-query", d_result[n], 6);
-    sd.id=pdns_stou(d_result[n][0]);
+
     try {
       sd.zone= DNSName(d_result[n][1]);
     } catch (...) {
       continue;
     }
-    sd.last_check=pdns_stou(d_result[n][3]);
-    sd.notified_serial=pdns_stou(d_result[n][4]);
+    sd.notified_serial=pdns_stou(d_result[n][3]);
+    fillSOAData(d_result[n][4], sdata);
+    if(sd.notified_serial==sdata.serial) {
+        continue;
+    }
+    sd.id=pdns_stou(d_result[n][0]);
+    sd.last_check=pdns_stou(d_result[n][2]);
+    sd.serial=sdata.serial;
     sd.backend=this;
     sd.kind=DomainInfo::Master;
-    allMasters.push_back(sd);
-  }
-
-  for(vector<DomainInfo>::iterator i=allMasters.begin();i!=allMasters.end();++i) {
-    SOAData sdata;
-    sdata.serial=0;
-    sdata.refresh=0;
-    getSOA(i->zone,sdata);
-    if(i->notified_serial!=sdata.serial) {
-      i->serial=sdata.serial;
-      updatedDomains->push_back(*i);
-    }
+    updatedDomains->push_back(sd);
   }
 }
 
