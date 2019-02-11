@@ -657,6 +657,7 @@ dnstcpbench_LDADD = \
 nsec3dig_SOURCES = \
 	base32.cc \
 	base64.cc base64.hh \
+	dns_random.cc dns_random.hh \
 	dnsname.cc dnsname.hh \
 	dnslabeltext.cc \
 	dnsparser.cc dnsparser.hh \

@@ -34,12 +34,12 @@ extern StatBag S;
 
 static pthread_rwlock_t g_signatures_lock = PTHREAD_RWLOCK_INITIALIZER;
 typedef map<pair<string, string>, string> signaturecache_t;
-static array<signaturecache_t, 128> g_signatures;
-static array<uint32_t, 128> g_cacheweekno;
+static std::array<signaturecache_t, 128> g_signatures;
+static std::array<uint32_t, 128> g_cacheweekno;
 
 AtomicCounter* g_signatureCount;
 
-static void fillOutRRSIG(DNSSECPrivateKey& dpk, const DNSName& signQName, RRSIGRecordContent& rrc, vector<shared_ptr<DNSRecordContent> >& toSign
+static void fillOutRRSIG(DNSSECPrivateKey& dpk, const DNSName& signQName, RRSIGRecordContent& rrc, vector<shared_ptr<DNSRecordContent> >& toSign,
     uint32_t startOfWeekOffset, uint32_t startOfWeek, uint32_t weekNumber)
 {
   if(!g_signatureCount)
@@ -97,7 +97,7 @@ static int getRRSIGsForRRSET(DNSSECKeeper& dk, const DNSName& signer, const DNSN
     return -1;
 
   uint32_t startOfWeekOffset = getStartOfWeekOffset(signer);
-  uint32_t starOfWeek, weekNumber;
+  uint32_t startOfWeek, weekNumber;
   tie(startOfWeek, weekNumber) = getStartOfWeek(startOfWeekOffset);
 
   RRSIGRecordContent rrc;
@@ -168,7 +168,7 @@ uint64_t signatureCacheSize(const std::string& str)
   ReadLock l(&g_signatures_lock);
   uint64_t cacheSize = 0;
   for(int i=0;i<128;i++) {
-    cacheSize += g_signatures[i].size()
+    cacheSize += g_signatures[i].size();
   }
   return cacheSize;
 }

@@ -150,11 +150,12 @@ void CommunicatorClass::masterUpdateCheck(PacketHandler *P)
   for(vector<tuple<DomainInfo,SOAData>>::iterator i=mdomains.begin();i!=mdomains.end();++i) {
     SOAData sd;
     DomainInfo di;
-    tie(di, sd) = i;
+    tie(di, sd) = *i;
     editSOAData(dk, sd);
     if(di.notified_serial != sd.serial) {
       di.serial = sd.serial;
       cmdomains.push_back(di);
+    }
   }
 
   if(cmdomains.empty()) {

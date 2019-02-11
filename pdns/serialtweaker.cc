@@ -60,12 +60,22 @@ bool editSOARecord(DNSZoneRecord& rr, const string& kind) {
   return true;
 }
 
+bool editSOAData(DNSSECKeeper& dk, SOAData& sd) {
+  string kind;
+  dk.getSoaEdit(sd.qname, kind);
+  if(kind.empty())
+    return false;
+
+  sd.serial = calculateEditSOA(sd, kind);
+  return true;
+}
+
 uint32_t calculateEditSOA(const DNSZoneRecord& rr, const string& kind)
 {
   auto src = getRR<SOARecordContent>(rr.dr);
   uint32_t startOfWeekOffset = getStartOfWeekOffset(rr.dr.d_name);
   time_t inception;
-  tie<inception, ignore = getStartOfWeek(startOfWeekOffset);
+  tie(inception, std::ignore) = getStartOfWeek(startOfWeekOffset);
 
   if(pdns_iequals(kind,"INCEPTION-INCREMENT")) {
     uint32_t inception_serial = localtime_format_YYYYMMDDSS(inception, 1);
