@@ -247,11 +247,11 @@ void UeberBackend::getUnfreshSlaveInfos(vector<DomainInfo>* domains)
 
 
 
-void UeberBackend::getUpdatedMasters(vector<DomainInfo>* domains)
+void UeberBackend::getMasters(vector<tuple<DomainInfo,SOAData>>* masterDomains)
 {
   for ( vector< DNSBackend * >::iterator i = backends.begin(); i != backends.end(); ++i )
   {
-    ( *i )->getUpdatedMasters( domains );
+    ( *i )->getMasters( masterDomains );
   }
 }
 

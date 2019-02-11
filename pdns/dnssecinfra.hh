@@ -153,7 +153,8 @@ DSRecordContent makeDSFromDNSKey(const DNSName& qname, const DNSKEYRecordContent
 
 class DNSSECKeeper; 
 
-uint32_t getStartOfWeek();
+pair<uint32_t,uint32_t> getStartOfWeek(uint32_t weekStartOffset);
+uint32_t getStartOfWeekOffset(const DNSName& signer);
 
 string hashQNameWithSalt(const NSEC3PARAMRecordContent& ns3prc, const DNSName& qname);
 string hashQNameWithSalt(const std::string& salt, unsigned int iterations, const DNSName& qname);

@@ -470,11 +470,21 @@ static DNSKEYRecordContent makeDNSKEYFromDNSCryptoKeyEngine(const std::shared_pt
   return drc;
 }
 
-uint32_t getStartOfWeek()
+pair<uint32_t,uint32_t> getStartOfWeek(uint32_t weekStartOffset)
 {
-  uint32_t now = time(0);
-  now -= (now % (7*86400));
-  return now;
+  uint32_t now = time(0), week_number;
+  now -= (now - weekStartOffset) % (7*86400);
+  /* we add some jitter here so not all your slaves start pruning their caches at the very same millisecond */
+  week_number = (now-weekStartOffset-dns_random(3600)) / (7*86400);
+  return make_pair(now, week_number);
+}
+
+uint32_t getStartOfWeekOffset(const DNSName& signer)
+{
+  /* We split the week into 128 * 4725s chunks assuming that the hashing
+   * algorithm is perfect and that the values of the first 7 bits are evenly
+   * distributed for all zones. */
+  return (signer.hash() & 127) * (86400*7/128);
 }
 
 string hashQNameWithSalt(const NSEC3PARAMRecordContent& ns3prc, const DNSName& qname)

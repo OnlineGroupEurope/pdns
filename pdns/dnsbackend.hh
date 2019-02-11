@@ -296,8 +296,8 @@ public:
   {
   }
 
-  //! get list of domains that have been changed since their last notification to slaves
-  virtual void getUpdatedMasters(vector<DomainInfo>* domains)
+  //! get list of domains for which we are master along with their SOA records
+  virtual void getMasters(vector<tuple<DomainInfo,SOAData>>* masterDomains)
   {
   }
   

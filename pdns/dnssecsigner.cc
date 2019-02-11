@@ -35,12 +35,13 @@ extern StatBag S;
 
 static pthread_rwlock_t g_signatures_lock = PTHREAD_RWLOCK_INITIALIZER;
 typedef map<pair<string, string>, string> signaturecache_t;
-static signaturecache_t g_signatures;
-static int g_cacheweekno;
+static array<signaturecache_t, 128> g_signatures;
+static array<uint32_t, 128> g_cacheweekno;
 
 AtomicCounter* g_signatureCount;
 
-static void fillOutRRSIG(DNSSECPrivateKey& dpk, const DNSName& signQName, RRSIGRecordContent& rrc, vector<shared_ptr<DNSRecordContent> >& toSign)
+static void fillOutRRSIG(DNSSECPrivateKey& dpk, const DNSName& signQName, RRSIGRecordContent& rrc, vector<shared_ptr<DNSRecordContent> >& toSign
+    uint32_t startOfWeekOffset, uint32_t startOfWeek, uint32_t weekNumber)
 {
   if(!g_signatureCount)
     g_signatureCount = S.getPointer("signatures");
@@ -54,11 +55,19 @@ static void fillOutRRSIG(DNSSECPrivateKey& dpk, const DNSName& signQName, RRSIGR
   pair<string, string> lookup(rc->getPubKeyHash(), pdns_md5sum(msg));  // this hash is a memory saving exercise
 
   bool doCache=1;
+  uint32_t cacheChunk = startOfWeekOffset / (86400*8/128);
+  if(cacheChunk > 128)
+  {
+    // This shouldn't happen but better be safe than sorry..
+    L<<Logger::Error<<"Invalid startOfWeekOffset detected - skipping cache!"<<endl;
+    doCache = 0;
+  }
+
   if(doCache)
   {
     ReadLock l(&g_signatures_lock);
-    signaturecache_t::const_iterator iter = g_signatures.find(lookup);
-    if(iter != g_signatures.end()) {
+    signaturecache_t::const_iterator iter = g_signatures[cacheChunk].find(lookup);
+    if(iter != g_signatures[cacheChunk].end()) {
       rrc.d_signature=iter->second;
       return;
     }
@@ -68,17 +77,15 @@ static void fillOutRRSIG(DNSSECPrivateKey& dpk, const DNSName& signQName, RRSIGR
   rrc.d_signature = rc->sign(msg);
   (*g_signatureCount)++;
   if(doCache) {
-    /* we add some jitter here so not all your slaves start pruning their caches at the very same millisecond */
-    int weekno = (time(0) - dns_random(3600)) / (86400*7);  // we just spent milliseconds doing a signature, microsecond more won't kill us
     const static int maxcachesize=::arg().asNum("max-signature-cache-entries", INT_MAX);
 
     WriteLock l(&g_signatures_lock);
-    if(g_cacheweekno < weekno || g_signatures.size() >= (uint) maxcachesize) {  // blunt but effective (C) Habbie, mind04
-      L<<Logger::Warning<<"Cleared signature cache."<<endl;
-      g_signatures.clear();
-      g_cacheweekno = weekno;
+    if(g_cacheweekno[cacheChunk] < weekNumber || g_signatures[cacheChunk].size() >= (uint) maxcachesize / 128) { // blunt but effective (C) Habbie, mind04
+      L<<Logger::Warning<<"Cleared signature cache chunk "<<cacheChunk<<endl;
+      g_signatures[cacheChunk].clear();
+      g_cacheweekno[cacheChunk] = weekNumber;
     }
-    g_signatures[lookup] = rrc.d_signature;
+    g_signatures[cacheChunk][lookup] = rrc.d_signature;
   }
 }
 
@@ -89,7 +96,11 @@ static int getRRSIGsForRRSET(DNSSECKeeper& dk, const DNSName& signer, const DNSN
 {
   if(toSign.empty())
     return -1;
-  uint32_t startOfWeek = getStartOfWeek();
+
+  uint32_t startOfWeekOffset = getStartOfWeekOffset(signer);
+  uint32_t starOfWeek, weekNumber;
+  tie(startOfWeek, weekNumber) = getStartOfWeek(startOfWeekOffset);
+
   RRSIGRecordContent rrc;
   rrc.d_type=signQType;
 
@@ -111,7 +122,7 @@ static int getRRSIGsForRRSET(DNSSECKeeper& dk, const DNSName& signer, const DNSN
       continue;
     }
 
-    fillOutRRSIG(keymeta.first, signQName, rrc, toSign);
+    fillOutRRSIG(keymeta.first, signQName, rrc, toSign, startOfWeekOffset, startOfWeek, weekNumber);
     rrcs.push_back(rrc);
   }
   return 0;
@@ -156,7 +167,11 @@ static void addSignature(DNSSECKeeper& dk, UeberBackend& db, const DNSName& sign
 uint64_t signatureCacheSize(const std::string& str)
 {
   ReadLock l(&g_signatures_lock);
-  return g_signatures.size();
+  uint64_t cacheSize = 0;
+  for(int i=0;i<128;i++) {
+    cacheSize += g_signatures[i].size()
+  }
+  return cacheSize;
 }
 
 static bool rrsigncomp(const DNSZoneRecord& a, const DNSZoneRecord& b)

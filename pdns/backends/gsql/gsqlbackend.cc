@@ -401,10 +401,10 @@ void GSQLBackend::getUnfreshSlaveInfos(vector<DomainInfo> *unfreshDomains)
   }
 }
 
-void GSQLBackend::getUpdatedMasters(vector<DomainInfo> *updatedDomains)
+void GSQLBackend::getMasters(vector<tuple<DomainInfo,SOAData>> *masterDomains)
 {
-  /* list all domains that need notifications for which we are master, and insert into updatedDomains
-     id,name,master IP,serial */
+  /* list all domains for which we are master along with their SOA records
+   *  and insert into masterDomains */
   try {
     reconnectIfNeeded();
 
@@ -414,33 +414,31 @@ void GSQLBackend::getUpdatedMasters(vector<DomainInfo> *updatedDomains)
         reset();
   }
   catch(SSqlException &e) {
-    throw PDNSException("GSQLBackend unable to retrieve list of SOA Records: "+e.txtReason());
+    throw PDNSException("GSQLBackend unable to retrieve list of master zones: "+e.txtReason());
   }
 
   size_t numanswers=d_result.size();
   for(size_t n=0;n<numanswers;++n) { // id,name,last_check,notified_serial,content
+    DomainInfo di;
+    SOAData sd;
+    sd.serial=0;
+    sd.refresh=0;
     ASSERT_ROW_COLUMNS("info-all-soa-master-query", d_result[n], 5);
-    SOAData sdata;
-    sdata.serial=0;
-    sdata.refresh=0;
-    DomainInfo sd;
 
+    di.id=pdns_stou(d_result[n][0]);
     try {
-      sd.zone= DNSName(d_result[n][1]);
+      di.zone=DNSName(d_result[n][1]);
     } catch (...) {
       continue;
     }
-    sd.notified_serial=pdns_stou(d_result[n][3]);
-    fillSOAData(d_result[n][4], sdata);
-    if(sd.notified_serial==sdata.serial) {
-        continue;
-    }
-    sd.id=pdns_stou(d_result[n][0]);
-    sd.last_check=pdns_stou(d_result[n][2]);
-    sd.serial=sdata.serial;
-    sd.backend=this;
-    sd.kind=DomainInfo::Master;
-    updatedDomains->push_back(sd);
+    di.last_check=pdns_stou(d_result[n][2]);
+    di.notified_serial=pdns_stou(d_result[n][3]);
+    di.backend=this;
+    di.kind=DomainInfo::Master;
+
+    fillSOAData(d_result[n][4], sd);
+
+    masterDomains->push_back(make_tuple(di, sd));
   }
 }
 

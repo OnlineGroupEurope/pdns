@@ -24,6 +24,7 @@
 #endif
 #include "auth-caches.hh"
 #include "utility.hh"
+#include "dnsseckeeper.hh"
 #include <errno.h>
 #include "communicator.hh"
 #include <set>
@@ -105,10 +106,20 @@ bool CommunicatorClass::notifyDomain(const DNSName &domain)
 {
   DomainInfo di;
   UeberBackend B;
+  DNSSECKeeper dk (&B); // reuse our UeberBackend copy for DNSSECKeeper
+
   if(!B.getDomainInfo(domain, di)) {
     L<<Logger::Error<<"No such domain '"<<domain<<"' in our database"<<endl;
     return false;
   }
+
+  SOAData sdata;
+  sdata.serial=0;
+  sdata.refresh=0;
+  B.getSOAUncached(di.zone, sdata);
+  editSOAData(dk, sdata);
+  di.serial = sdata.serial;
+
   queueNotifyDomain(di, &B);
   // call backend and tell them we sent out the notification - even though that is premature    
   di.backend->setNotified(di.id, di.serial);
@@ -130,9 +141,22 @@ void CommunicatorClass::masterUpdateCheck(PacketHandler *P)
     return; 
 
   UeberBackend *B=P->getBackend();
+  DNSSECKeeper dk (B); // reuse our UeberBackend copy for DNSSECKeeper
+
+  vector<tuple<DomainInfo, SOAData>> mdomains;
   vector<DomainInfo> cmdomains;
-  B->getUpdatedMasters(&cmdomains);
-  
+
+  B->getMasters(&mdomains);
+  for(vector<tuple<DomainInfo,SOAData>>::iterator i=mdomains.begin();i!=mdomains.end();++i) {
+    SOAData sd;
+    DomainInfo di;
+    tie(di, sd) = i;
+    editSOAData(dk, sd);
+    if(di.notified_serial != sd.serial) {
+      di.serial = sd.serial;
+      cmdomains.push_back(di);
+  }
+
   if(cmdomains.empty()) {
     if(d_masterschanged)
       L<<Logger::Warning<<"No master domains need notifications"<<endl;

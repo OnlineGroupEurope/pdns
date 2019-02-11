@@ -106,7 +106,7 @@ public:
   void getAllDomains(vector<DomainInfo> *domains, bool include_disabled=false);
 
   void getUnfreshSlaveInfos(vector<DomainInfo>* domains);
-  void getUpdatedMasters(vector<DomainInfo>* domains);
+  void getMasters(vector<tuple<DomainInfo,SOAData>>* masterDomains);
   bool getDomainInfo(const DNSName &domain, DomainInfo &di);
   bool createDomain(const DNSName &domain);
   

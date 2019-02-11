@@ -63,8 +63,11 @@ bool editSOARecord(DNSZoneRecord& rr, const string& kind) {
 uint32_t calculateEditSOA(const DNSZoneRecord& rr, const string& kind)
 {
   auto src = getRR<SOARecordContent>(rr.dr);
+  uint32_t startOfWeekOffset = getStartOfWeekOffset(rr.dr.d_name);
+  time_t inception;
+  tie<inception, ignore = getStartOfWeek(startOfWeekOffset);
+
   if(pdns_iequals(kind,"INCEPTION-INCREMENT")) {
-    time_t inception = getStartOfWeek();
     uint32_t inception_serial = localtime_format_YYYYMMDDSS(inception, 1);
     uint32_t dont_increment_after = localtime_format_YYYYMMDDSS(inception + 2*86400, 99);
 
@@ -75,14 +78,12 @@ uint32_t calculateEditSOA(const DNSZoneRecord& rr, const string& kind)
     }
   }
   else if(pdns_iequals(kind,"INCREMENT-WEEKS")) {
-    time_t inception = getStartOfWeek();
     return (src->d_st.serial + (inception / (7*86400)));
   }
   else if(pdns_iequals(kind,"EPOCH")) {
     return time(0);
   }
   else if(pdns_iequals(kind,"INCEPTION-EPOCH")) {
-    uint32_t inception = getStartOfWeek();
     if (src->d_st.serial < inception)
       return inception;
   } else if(!kind.empty()) {
