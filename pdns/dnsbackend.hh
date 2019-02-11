@@ -300,6 +300,9 @@ public:
   virtual void getMasters(vector<tuple<DomainInfo,SOAData>>* masterDomains)
   {
   }
+  virtual void getUpdatedMasters(vector<DomainInfo>* domains)
+  {
+  }
   
   //! Called by PowerDNS to inform a backend that a domain has been checked for freshness
   virtual void setFresh(uint32_t domain_id)
