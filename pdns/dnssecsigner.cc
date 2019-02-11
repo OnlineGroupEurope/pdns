@@ -27,7 +27,6 @@
 
 #include "md5.hh"
 #include "dnsseckeeper.hh"
-#include "dns_random.hh"
 #include "lock.hh"
 #include "arguments.hh"
 #include "statbag.hh"

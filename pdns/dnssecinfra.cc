@@ -31,6 +31,7 @@
 #include "statbag.hh"
 #endif
 #include "iputils.hh"
+#include "dns_random.hh"
 
 #include <boost/algorithm/string.hpp>
 #include "dnssecinfra.hh" 
