@@ -437,6 +437,8 @@ void GSQLBackend::getMasters(vector<tuple<DomainInfo,SOAData>> *masterDomains)
     di.kind=DomainInfo::Master;
 
     fillSOAData(d_result[n][4], sd);
+	sd.domain_id=di.id;
+	sd.qname=di.zone;
 
     masterDomains->push_back(make_tuple(di, sd));
   }
